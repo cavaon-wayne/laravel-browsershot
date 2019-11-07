@@ -10,7 +10,7 @@
     ],
     "type": "library",
     "require": {
-        "spatie/browsershot": "^3.33",
+        "spatie/browsershot": "3.20.0",
         "illuminate/support": "5.*"
     },
     "autoload": {
