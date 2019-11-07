@@ -13,7 +13,7 @@ trait Responsable
      * @param array $additionalHeaders
      * @return Response
      */
-    public function download(?string $filename = null, $additionalHeaders = []): Response
+    public function download(string $filename = null, $additionalHeaders = []): Response
     {
         return $this->response('attachment', $filename, $additionalHeaders);
     }
@@ -25,7 +25,7 @@ trait Responsable
      * @param array       $additionalHeaders
      * @return \Illuminate\Http\Response
      */
-    public function inline(?string $filename = null, $additionalHeaders = []): Response
+    public function inline(string $filename = null, $additionalHeaders = []): Response
     {
         return $this->response('inline', $filename, $additionalHeaders);
     }
@@ -38,7 +38,7 @@ trait Responsable
      * @param array $additionalHeaders
      * @return Response
      */
-    protected function response(string $contentDisposition, ?string $filename = null, $additionalHeaders = []): Response
+    protected function response(string $contentDisposition, string $filename = null, $additionalHeaders = []): Response
     {
         $contents = $this->getTempFileContents();
 
@@ -54,7 +54,7 @@ trait Responsable
         return new Response($contents, 200, $headers);
     }
 
-    abstract protected function getTempFileContents(): ?string;
+    abstract protected function getTempFileContents();
 
     abstract protected function getMimeType(): string;
 }

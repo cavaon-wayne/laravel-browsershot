@@ -17,9 +17,9 @@ trait Storable
      */
     public function store(string $file_path, $visibility='public'): string
     {
-        $this->generateTempFile();
+        $filename=$this->generateTempFile();
 
-        return Storage::put($file_path, file_get_contents($this->tempFile), $visibility);
+        return Storage::put($file_path, file_get_contents($filename), $visibility);
     }
 
     /**
@@ -34,5 +34,5 @@ trait Storable
 
     abstract protected function getFileExtension(): string;
 
-    abstract protected function generateTempFile(): Wrapper;
+    abstract protected function generateTempFile(): string;
 }

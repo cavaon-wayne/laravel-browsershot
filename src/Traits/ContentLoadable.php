@@ -16,7 +16,7 @@ trait ContentLoadable
      * @return \Cavaon\Browsershot\Wrapper
      * @throws \Throwable
      */
-    public function loadView(string $view, ?array $data = [], ?array $mergeData = []): Wrapper
+    public function loadView(string $view, array $data = [], array $mergeData = []): Wrapper
     {
         $html = view($view, $data, $mergeData)->render();
 

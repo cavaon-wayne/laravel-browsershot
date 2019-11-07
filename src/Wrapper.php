@@ -24,11 +24,14 @@ abstract class Wrapper
     protected $browsershot;
 
     /**
-    * Directory where the temporary pdf will be stored
-    *
-    * @var string
-    */
-    protected $tempFile;
+     * @var string
+     */
+    protected $temporaryFolder;
+
+    /**
+     * @var array
+     */
+    public $temporaryFiles = [];
 
     public function __construct(string $url = 'http://github.com/Cavaon/laravel-browsershot')
     {
@@ -55,7 +58,7 @@ abstract class Wrapper
 
         $this->loadUrl($url);
 
-        register_shutdown_function([$this, 'removeTemporaryFile']);
+        register_shutdown_function([$this, 'removeTemporaryFiles']);
     }
 
     /**
@@ -83,15 +86,31 @@ abstract class Wrapper
     }
 
     /**
-     * Gets the temp file path
+     * Get TemporaryFolder.
      *
      * @return string
      */
-    public function getTempFilePath(): string
+    public function getTemporaryFolder()
     {
-        $this->generateTempFile();
+        if ($this->temporaryFolder === null) {
+            return sys_get_temp_dir();
+        }
 
-        return $this->tempFile;
+        return $this->temporaryFolder;
+    }
+
+    /**
+     * Set temporaryFolder.
+     *
+     * @param string $temporaryFolder
+     *
+     * @return $this
+     */
+    public function setTemporaryFolder($temporaryFolder)
+    {
+        $this->temporaryFolder = $temporaryFolder;
+
+        return $this;
     }
 
     /**
@@ -99,27 +118,49 @@ abstract class Wrapper
      *
      * @return string|null
      */
-    protected function getTempFileContents(): ?string
+    protected function getTempFileContents()
     {
-        $this->generateTempFile();
-
-        return file_get_contents($this->tempFile);
+        $filename=$this->generateTempFile();
+        return file_get_contents($filename);
     }
 
     /**
-     * Generates temp file
+     * Creates a temporary file.
+     * The file is not created if the $content argument is null.
      *
-     * @return Wrapper
+     * @param string $content   Optional content for the temporary file
+     * @param string $extension An optional extension for the filename
+     *
+     * @return string The filename
      */
-    protected function generateTempFile(): Wrapper
+    protected function generateTempFile($content = null, $extension = null)
     {
-        $tempFileName = tempnam(sys_get_temp_dir(), 'browsershot_output');
+        $dir = rtrim($this->getTemporaryFolder(), DIRECTORY_SEPARATOR);
 
-        $this->tempFile = $tempFileName . '.' . $this->getFileExtension();
+        if (!is_dir($dir)) {
+            if (false === @mkdir($dir, 0777, true) && !is_dir($dir)) {
+                throw new \RuntimeException(sprintf("Unable to create directory: %s\n", $dir));
+            }
+        } elseif (!is_writable($dir)) {
+            throw new \RuntimeException(sprintf("Unable to write in directory: %s\n", $dir));
+        }
 
-        $this->browsershot()->save($this->tempFile);
+        $filename = $dir . DIRECTORY_SEPARATOR . uniqid('browsershot_output', true);
 
-        return $this;
+        if (null === $extension) {
+            $extension=$this->getFileExtension();
+        }
+        $filename .= '.' . $extension;
+
+        if (null !== $content) {
+            file_put_contents($filename, $content);
+        }else{
+            $this->browsershot()->save($filename);
+        }
+
+        $this->temporaryFiles[] = $filename;
+
+        return $filename;
     }
 
     /**
@@ -129,7 +170,7 @@ abstract class Wrapper
      * @param array $arguments
      * @return \Cavaon\Browsershot\Wrapper
      */
-    public function __call($name, $arguments): Wrapper
+    public function __call($name, $arguments)
     {
         try {
             $this->browsershot()->$name(...$arguments);
@@ -147,22 +188,24 @@ abstract class Wrapper
      */
     public function __sleep()
     {
-        $this->removeTemporaryFile;
+        $this->removeTemporaryFiles();
 
         return [];
     }
 
     public function __destruct()
     {
-        $this->removeTemporaryFile();
+        $this->removeTemporaryFiles();
     }
 
         /**
      * Removes all temporary files.
      */
-    public function removeTemporaryFile()
+    public function removeTemporaryFiles()
     {
-        $this->unlink($this->tempFile);
+        foreach ($this->temporaryFiles as $file) {
+            $this->unlink($file);
+        }
     }
 
     /**
